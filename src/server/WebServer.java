@@ -1,13 +1,13 @@
 package server;
 
+import application.routing.Route;
 import logger.LogConfig;
 import logger.Logger;
 import logger.NewLinePosition;
-import application.options.OptionHandler;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.HashMap;
+import java.util.ArrayList;
 
 public class WebServer {
     private ServerSocket serverSocket;
@@ -23,7 +23,7 @@ public class WebServer {
     }
 
     @LogConfig(position = NewLinePosition.BEFORE)
-    public void serveRoutes(HashMap<String, OptionHandler> routes) {
+    public void serveRoutes(ArrayList<Route> routes) {
         try {
             while (isOn) {
                 var clientSocket = serverSocket.accept();

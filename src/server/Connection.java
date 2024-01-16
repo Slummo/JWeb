@@ -1,19 +1,20 @@
 package server;
 
-import application.options.OptionHandler;
+import application.http.structure.request.RequestMethod;
+import application.routing.Route;
 import logger.Logger;
 import application.http.structure.request.Request;
 import application.http.structure.response.Response;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.util.HashMap;
+import java.util.ArrayList;
 
 public class Connection implements Runnable {
     private final Socket clientSocket;
-    private final HashMap<String, OptionHandler> routes;
+    private final ArrayList<Route> routes;
 
-    public Connection(Socket clientSocket, HashMap<String, OptionHandler> routes) {
+    public Connection(Socket clientSocket, ArrayList<Route> routes) {
         this.clientSocket = clientSocket;
         this.routes = routes;
     }
@@ -28,12 +29,18 @@ public class Connection implements Runnable {
 
             Logger.info("[+]Serving route: " + servePath);
 
-            var handler = routes.get(servePath);
-            if (handler != null) {
-                handler.handle(req, res);
-            } else {
-                // TODO: Respond with a 404 Not Found error
-                res.status(404).sendText("Not Found");
+            for (var route : routes) {
+                String path = route.getPath();
+                var endPoints = route.getEndPoints();
+
+                for (var e : endPoints) {
+                    var method = e.getMethod();
+                    var requestMethod = e.getRequestMethod();
+
+                    if (requestMethod.equals(RequestMethod.GET)) {
+                       // TODO: implement this
+                    }
+                }
             }
             closeConnection();
         } catch (Exception e) {

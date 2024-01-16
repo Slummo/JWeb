@@ -1,25 +1,42 @@
 package application;
 
+import application.http.structure.request.RequestMethod;
+import application.options.folder.FolderOption;
+import application.routing.Route;
+import application.routing.config.RouteMapper;
 import logger.Logger;
 import application.options.OptionConfig;
 import application.options.folder.FolderConfig;
-import application.options.icon.Icon;
+import application.options.icon.IconOption;
 import application.options.icon.IconConfig;
-import application.options.folder.Folder;
 import application.options.Option;
-import application.options.log.Log;
+import application.options.log.LogOption;
 import application.options.log.LogConfig;
+import reflection.AnnotationFinder;
 import server.callbacks.CreationCallback;
 import server.WebServer;
 import application.options.OptionHandler;
+import utils.RF;
 
-import java.util.HashMap;
+import java.io.IOException;
+import java.util.ArrayList;
 
-public class Application {
-    private final HashMap<String, OptionHandler> routes;
+public class Application implements AnnotationFinder<Class<?>> {
+    private final ArrayList<Route> routes;
 
     public Application() {
-        routes = new HashMap<>();
+        routes = new ArrayList<>();
+
+        var classes = RF.getClassesInDir(System.getProperty("user.dir"));
+        var routeMappers = find(classes, RouteMapper.class);
+
+        for (var mapper : routeMappers) {
+            try {
+                routes.add(new Route(mapper));
+            } catch (IOException e) {
+                Logger.err(e);
+            }
+        }
     }
 
     /**
@@ -27,14 +44,14 @@ public class Application {
      *
      * <p>Options:</p>
      * <p>
-     *      {@link Folder} is used to serve static files (like html documents, images, videos, script etc...)
+     *      {@link FolderOption} is used to serve static files (like html documents, images, videos, script etc...)
      *      inside a folder.
      * </p>
-     * <p>{@link Log} is used to add the customizable logging system to the application.</p>
-     * <p>{@link Icon} is used to serve the icon of a web page inside a folder.</p>
+     * <p>{@link LogOption} is used to add the customizable logging system to the application.</p>
+     * <p>{@link IconOption} is used to serve the icon of a web page inside a folder.</p>
      *
      * <p>
-     *     Regarding {@link Icon} and {@link Log} specifically, only the first option of these types will be used,
+     *     Regarding {@link IconOption} and {@link LogOption} specifically, only the first option of these types will be used,
      *     and every other call will be <strong>ignored</strong>.
      * </p>
      *
@@ -45,32 +62,28 @@ public class Application {
 
     public void use(OptionConfig config) {
         if (config instanceof FolderConfig c) {
-            var folder = new Folder(c);
+            var folder = new FolderOption(c);
             folder.getFilesPaths().forEach(path -> {
                 var relativePath = folder.getRelativePath(path);
-                get(relativePath, (req, res) -> res.sendFile(path));
+                request(relativePath, (req, res) -> res.sendFile(path), RequestMethod.GET);
             });
         }
         if (config instanceof IconConfig c) {
-            var icon = new Icon(c);
+            var icon = new IconOption(c);
             if (!icon.isSet()) icon.set();
             else return;
-            get("/favicon.ico", (req, res) -> res.sendFile(icon.getPath()));
+            request("/favicon.ico", (req, res) -> res.sendFile(icon.getPath()), RequestMethod.GET);
         }
         if (config instanceof LogConfig c) {
-           var log = new Log(c);
+           var log = new LogOption(c);
             if (!log.isSet()) log.set();
             else return;
            // TODO make something with log
         }
     }
 
-    private void get(String path, OptionHandler optionHandler) {
-        routes.put(path, optionHandler);
-    }
-
-    private void post(String path, OptionHandler optionHandler) {
-        // TODO
+    private void request(String path, OptionHandler optionHandler, RequestMethod requestMethod) {
+        routes.add(new Route(path, optionHandler, requestMethod));
     }
 
     public void start(int port, CreationCallback callback) {
