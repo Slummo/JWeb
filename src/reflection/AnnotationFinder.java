@@ -19,7 +19,7 @@ public interface AnnotationFinder<T extends AnnotatedElement> {
     }
 
     default ArrayList<T> find(T[] targets, Class<? extends Annotation> annotationClass) {
-        var arr = new ArrayList<T>(List.of(targets));
+        var arr = new ArrayList<>(List.of(targets));
         return find(arr, annotationClass);
     }
 }
