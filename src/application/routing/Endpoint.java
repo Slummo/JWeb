@@ -3,6 +3,7 @@ package application.routing;
 import application.http.structure.request.Request;
 import application.http.structure.request.RequestMethod;
 import application.http.structure.response.Response;
+import application.options.OptionHandler;
 import application.routing.config.EndpointMapper;
 
 import java.lang.reflect.Method;
@@ -23,6 +24,10 @@ public class Endpoint {
 
     public Endpoint(OptionHandler handler, RequestMethod requestMethod) throws NoSuchMethodException {
         this(handler.getClass().getMethod("handle", Request.class, Response.class), requestMethod);
+    }
+
+    public Method getMethod() {
+        return method;
     }
 
     public RequestMethod getRequestMethod() {
