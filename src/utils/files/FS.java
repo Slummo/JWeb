@@ -5,84 +5,16 @@ import logger.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 public class FS {
     public enum PathType {
         FILE, DIRECTORY, BOTH
     }
 
-    public static ArrayList<Path> getPathsInDir(String dirPath, PathType type) {
-        var paths = new ArrayList<Path>();
-
-        var mainPath = Path.of(dirPath);
-
-        try (var stream = Files.newDirectoryStream(mainPath)) {
-            for (Path p : stream) {
-                switch (type) {
-                    case FILE -> {
-                        if (Files.isDirectory(p)) paths.addAll(getPathsInDir(p.toString(), type));
-                        else if (Files.isRegularFile(p)) paths.add(p);
-                    }
-                    case DIRECTORY -> {
-                        if (Files.isDirectory(p)) {
-                            paths.add(p);
-                            paths.addAll(getPathsInDir(p.toString(), type));
-                        }
-                    }
-                    case BOTH -> {
-                        if (Files.isDirectory(p)) {
-                            paths.add(p);
-                            paths.addAll(getPathsInDir(p.toString(), type));
-                        } else if (Files.isRegularFile(p)) paths.add(p);
-                    }
-                }
-            }
-        } catch (IOException e) {
-            Logger.err(e);
-        }
-
-        return paths;
-    }
-
-    public static ArrayList<Path> getPathsInDir(Path dirPath, PathType type) {
-        return getPathsInDir(dirPath.toString(), type);
-    }
-
-    public static ArrayList<File> getFilesInDir(Path dirPath) {
-        var paths = getPathsInDir(dirPath, PathType.FILE);
-        var files = new ArrayList<File>();
-
-        for (var p : paths) {
-            files.add(p.toFile());
-        }
-
-        return files;
-    }
-
-    public static ArrayList<File> getFilesInDir(String dirPath) {
-        return getFilesInDir(Path.of(dirPath));
-    }
-
-    public static ArrayList<File> getFilesInDir(Path dirPath, ExtensionFilter filter) {
-        var files = getFilesInDir(dirPath);
-        var filtered = new ArrayList<File>();
-
-        for (var f : files) {
-            if (filter.accept(f)) {
-                filtered.add(f);
-            }
-        }
-
-        return filtered;
-    }
-
-    public static ArrayList<File> getFilesInDir(String dirPath, ExtensionFilter filter) {
-        return getFilesInDir(Path.of(dirPath), filter);
-    }
-
     public static String join(String... paths) {
-        var ps = getPathsInDir(System.getProperty("user.dir"), PathType.BOTH);
+        var dir = new Directory(System.getProperty("user.dir"));
+        var ps = dir.getPaths(PathType.BOTH);
 
         for (Path p : ps) {
             String s = p.toString();
@@ -98,7 +30,7 @@ public class FS {
                 }
             }
 
-            if (containsAll) return s;
+            if (containsAll) return s.replaceAll(Pattern.quote(File.separator), "/");
         }
 
         return null;
@@ -108,12 +40,13 @@ public class FS {
         var mainPath = Path.of(dirPath);
         if (!Files.isDirectory(mainPath)) throw new InvalidPathException(dirPath, "Not a directory");
 
-        var paths = getPathsInDir(dirPath, PathType.BOTH);
+        var dir = new Directory(dirPath);
+        var paths = dir.getPaths(PathType.BOTH);
         for (Path p : paths) {
             String str = p.toString();
             if (str.contains(otherPath)) {
                 String fileName = mainPath.getFileName().toString();
-                return str.split(fileName)[1];
+                return str.split(fileName)[1].replaceAll(Pattern.quote(File.separator), "/");
             }
         }
 

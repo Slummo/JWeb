@@ -1,6 +1,7 @@
 package application.options.folder;
 
 import application.options.OptionConfig;
+import utils.files.Directory;
 import utils.files.FS;
 
 import java.nio.file.Path;
@@ -14,7 +15,9 @@ public class FolderConfig implements OptionConfig {
     public FolderConfig(String path) {
         absolutePath = Path.of(path).toAbsolutePath();
         name = absolutePath.getFileName().toString();
-        filesPaths = FS.getPathsInDir(path, FS.PathType.FILE);
+
+        var dir = new Directory(path);
+        filesPaths = dir.getPaths(FS.PathType.FILE);
     }
 
     public Path getAbsolutePath() {
