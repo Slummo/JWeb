@@ -1,14 +1,20 @@
-package application.options.log;
+package application.options.icon;
 
 import application.options.OptionImpl;
 import application.options.Settable;
 
-public class Log extends OptionImpl<LogConfig> implements Settable {
+import java.nio.file.Path;
+
+public class IconOption extends OptionImpl<IconConfig> implements Settable {
     private boolean set;
 
-    public Log(LogConfig config) {
+    public IconOption(IconConfig config) {
         super(config);
         set = false;
+    }
+
+    public Path getPath() {
+        return Path.of(config.getPath());
     }
 
     @Override

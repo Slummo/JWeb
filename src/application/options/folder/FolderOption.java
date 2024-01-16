@@ -7,8 +7,8 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
-public class Folder extends OptionImpl<FolderConfig> {
-    public Folder(FolderConfig config) {
+public class FolderOption extends OptionImpl<FolderConfig> {
+    public FolderOption(FolderConfig config) {
         super(config);
     }
 
