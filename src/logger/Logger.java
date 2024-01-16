@@ -6,10 +6,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Objects;
 
 public class Logger {
     /**
@@ -48,24 +46,6 @@ public class Logger {
         return new SimpleDateFormat("MM/dd/yyyy HH:mm:ss").format(new Date());
     }
 
-    private static Method getCallingMethod() {
-        var stackTrace = Thread.currentThread().getStackTrace();
-        try {
-            // Index 2 corresponds to the calling method in the stack trace
-            var c = Class.forName(stackTrace[2].getClassName());
-            String methodName = stackTrace[2].getMethodName();
-
-            for (Method method : c.getDeclaredMethods()) {
-                if (method.getName().equals(methodName)) {
-                    return method;
-                }
-            }
-        } catch (ClassNotFoundException e) {
-            Logger.err(e);
-        }
-        return null;
-    }
-
     private static String getLogString(String msg, LogType type, NewLinePosition position, int newLineCharsCount) {
         String base = "[" + getCurrentTime() + "] {" + type + "} " + msg;
         String n = "\n".repeat(newLineCharsCount);
@@ -79,24 +59,31 @@ public class Logger {
 
     private static void log(String msg, LogType type, NewLinePosition position, int newLineCharsCount) {
         String logString = getLogString(msg, type, position, newLineCharsCount);
+
+        // Just print if it is not initialized
+        if (out == null) {
+            System.out.println(logString);
+            return;
+        }
+
         boolean consoleErr = type.equals(LogType.ERR);
         out.println(logString);
         if (toConsole) {
             if (consoleErr) System.err.println(logString);
             else System.out.println(logString);
-        };
+        }
     }
 
-    private static void log(String msg, LogType type, Method method) {
-        var logConfig = method.getAnnotation(LogConfig.class);
-        var position = (logConfig != null) ? logConfig.position() : NewLinePosition.NONE;
-        int newLineCharsCount = (logConfig != null) ? logConfig.newLineCharsCount() : 0;
-
-        log(msg, type, position, newLineCharsCount);
+    public static void log(String msg, LogType type) {
+        log(msg, type, NewLinePosition.NONE, 0);
     }
 
-    private static void log(String msg, LogType type) {
-        log(msg, type, Objects.requireNonNull(getCallingMethod()));
+    public static void log(String msg, LogType type, NewLinePosition position) {
+        log(msg, type, position, 1);
+    }
+
+    public static void log(String msg, LogType type, int newLineCharsCount) {
+        log(msg, type, NewLinePosition.NONE, newLineCharsCount);
     }
 
     public static void info(String msg) {
