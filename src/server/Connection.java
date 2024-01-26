@@ -6,17 +6,21 @@ import logger.Logger;
 import application.http.structure.request.Request;
 import application.http.structure.response.Response;
 
+import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Parameter;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 
 public class Connection implements Runnable {
     private final Socket clientSocket;
-    private final ArrayList<Route> routes;
+    private final HashMap<String, Route> routesMap;
 
-    public Connection(Socket clientSocket, ArrayList<Route> routes) {
+    public Connection(Socket clientSocket, HashMap<String, Route> routesMap) {
         this.clientSocket = clientSocket;
-        this.routes = routes;
+        this.routesMap = routesMap;
     }
 
     @Override
@@ -26,19 +30,41 @@ public class Connection implements Runnable {
             var res = new Response(clientSocket);
 
             String servePath = req.getHead().getPath();
-
             Logger.info("[+]Serving route: " + servePath);
 
-            for (var route : routes) {
-                String path = route.getPath();
-                var endPoints = route.getEndPoints();
+            var route = routesMap.get(servePath);
+            var endPoints = route.getEndPoints();
 
-                for (var e : endPoints) {
-                    var method = e.getMethod();
-                    var requestMethod = e.getRequestMethod();
+            for (var e : endPoints) {
+                var method = e.getMethod();
+                var returnType = method.getReturnType();
 
-                    if (requestMethod.equals(RequestMethod.GET)) {
-                       // TODO: implement this
+                var requestMethod = e.getRequestMethod();
+
+                // Get the route's class new instance using the default constructor
+                var instance = method.getDeclaringClass().getConstructor().newInstance();
+
+                switch (requestMethod) {
+                    case GET -> {
+                        if (String.class.equals(returnType)) {
+                            // TODO: fix Temporary implementation
+                            if (method.getParameterCount() != 0) continue;
+
+                            String str = (String) method.invoke(instance);
+                            res.sendText(str);
+                        }
+                        if (File.class.equals(returnType)) {
+                            File file = (File) method.invoke(instance);
+                            res.sendFile(file);
+                        }
+
+                        // Only get parameter if String
+                        var params = method.getParameters();
+                        for (var p : params) {
+                            if (p.getType().equals(String.class)) {
+                                // TODO: The parameter is a Query parameter
+                            }
+                        }
                     }
                 }
             }
@@ -46,6 +72,10 @@ public class Connection implements Runnable {
         } catch (Exception e) {
             Logger.err(e);
         }
+    }
+
+    private void serveRoute(Route r) {
+
     }
 
     private boolean shouldKeepAlive(Request req) {

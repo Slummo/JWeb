@@ -20,19 +20,21 @@ import utils.RF;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class Application implements AnnotationFinder<Class<?>> {
-    private final ArrayList<Route> routes;
+    private final HashMap<String, Route> routesMap;
 
     public Application() {
-        routes = new ArrayList<>();
+        routesMap = new HashMap<>();
 
         var classes = RF.getClassesInDir(System.getProperty("user.dir"));
         var routeMappers = find(classes, RouteMapper.class);
 
         for (var mapper : routeMappers) {
             try {
-                routes.add(new Route(mapper));
+                var r = new Route(mapper);
+                routesMap.put(r.getPath(), r);
             } catch (IOException e) {
                 Logger.err(e);
             }
@@ -83,7 +85,8 @@ public class Application implements AnnotationFinder<Class<?>> {
     }
 
     private void request(String path, OptionHandler optionHandler, RequestMethod requestMethod) {
-        routes.add(new Route(path, optionHandler, requestMethod));
+        var r = new Route(path, optionHandler, requestMethod);
+        routesMap.put(r.getPath(), r);
     }
 
     public void start(int port, CreationCallback callback) {
@@ -91,7 +94,7 @@ public class Application implements AnnotationFinder<Class<?>> {
             var server = new WebServer(port);
             callback.exec();
 
-            server.serveRoutes(routes);
+            server.serveRoutes(routesMap);
         } catch (Exception e) {
             Logger.err(e);
         }

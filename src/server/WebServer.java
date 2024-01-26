@@ -8,6 +8,7 @@ import logger.NewLinePosition;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class WebServer {
     private ServerSocket serverSocket;
@@ -23,7 +24,7 @@ public class WebServer {
     }
 
     @LogConfig(position = NewLinePosition.BEFORE)
-    public void serveRoutes(ArrayList<Route> routes) {
+    public void serveRoutes(HashMap<String, Route> routes) {
         try {
             while (isOn) {
                 var clientSocket = serverSocket.accept();
